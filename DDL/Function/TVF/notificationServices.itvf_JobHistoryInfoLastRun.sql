@@ -109,10 +109,12 @@ return
 		where tblSJ.[name] = @jobName
 
 		and   (
+
 					-- last recorder run
-					--   ( tblSJH.[step_id] = 0 )
+					( tblSJH.[step_id] = 0 )
 
 					-- current run
+					or 
 					( tblSJH.[instance_id] =
 
 						(

@@ -137,3 +137,28 @@ go
 
 
 */
+
+
+/*
+
+
+	declare @processID    int = 1
+	declare @fieldname    sysname = 'emailAddress'
+	declare @delimeter    varchar(30) = ';'
+
+	declare @sucess		  bit = 0
+
+
+	select
+			[subscription]
+			  = [notificationServices].[udfn_getProcessContact]
+				(
+					  @processID  
+					, @fieldname 
+					, @delimeter
+					, @sucess	
+				) 
+
+
+
+*/

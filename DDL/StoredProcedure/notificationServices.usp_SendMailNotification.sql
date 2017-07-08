@@ -32,7 +32,8 @@ alter procedure [notificationServices].[usp_SendMailNotification]
 	  @processID    int
 	, @success		bit = null
 	, @subject		varchar(80) = null
-	, @body			varchar(8000) = null
+	, @body			nvarchar(4000) = null
+	, @profileName  sysname = null output
 )
 as
 begin
@@ -43,6 +44,15 @@ begin
 	declare @fieldname    sysname = 'emailAddress'
 	declare @delimeter    char(1) = ';'
 
+	declare @profileID	  int
+
+	declare @username     sysname
+
+	/*
+		Get current user
+	*/
+	set @username = SYSTEM_USER
+
 	set @subscriberList
 			  = [notificationServices].[udfn_getProcessContact]
 				(
@@ -52,12 +62,72 @@ begin
 					, @success	
 				) 
 
+	/*
+		Get Profile ID - Private
+	*/
+	if (@profileName is null)
+	begin
+
+		select 
+				top 1
+				  @profileID = tblSMP.profile_id
+				, @profileName = tblSMP.[name]
+
+		from  [msdb].[dbo].[sysmail_profile] tblSMP
+
+		inner join [msdb].[dbo].[sysmail_principalprofile] tblSMPP
+
+			on tblSMP.[profile_id] = tblSMPP.profile_id
+
+		inner join [sys].[database_principals] tblSDP
+
+			on tblSMPP.principal_sid = tblSDP.[sid]
+
+		where tblSDP.[name]	= @username
+
+		order by
+				tblSMPP.is_default desc
+
+
+	end
+
+
+	/*
+		Get Profile ID - Public
+	*/
+	if (@profileName is null)
+	begin
+
+		select 
+				top 1
+				  @profileID = tblSMP.profile_id
+				, @profileName = tblSMP.[name]
+
+		from  [msdb].[dbo].[sysmail_profile] tblSMP
+
+		inner join [msdb].[dbo].[sysmail_principalprofile] tblSMPP
+
+			on tblSMP.[profile_id] = tblSMPP.profile_id
+
+		inner join [sys].[database_principals] tblSDP
+
+			on tblSMPP.principal_sid = tblSDP.[sid]
+
+		where tblSDP.[name]	in ( 'guest', 'public')
+
+		order by
+				tblSMPP.is_default desc
+
+
+	end
+
+
 	if (@subscriberList is not null)
 	begin
 
 		exec [Master].[email].[sp_sendMail]
 
-			  @profileName = null
+			  @profileName = @profileName
 			, @recipients  = @subscriberList
 			, @subject     = @subject
 			, @body        = @body
